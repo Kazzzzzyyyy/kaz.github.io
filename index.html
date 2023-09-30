@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive World Map</title>
+    <title>Water Sources Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         #map {
@@ -19,24 +19,26 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        var map = L.map('map').setView([0, 0], 2);
+        var map = L.map('map').setView([37.7749, -122.4194], 13); // Centered at San Francisco
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         function updateMap() {
-            fetch('https://restcountries.com/v3.1/all')
+            const boundingBox = '37.7749,-122.4194,37.8049,-122.3894'; // Bounding box for San Francisco
+
+            fetch(`https://overpass-api.de/api/interpreter?data=[out:json];(way["waterway"](bbox:${boundingBox});node["waterway"](bbox:${boundingBox}););out;`)
                 .then(response => response.json())
                 .then(data => {
-                    data.forEach(country => {
-                        if (country.latlng && country.latlng.length === 2) {
-                            const latitude = country.latlng[0];
-                            const longitude = country.latlng[1];
-                            L.marker([latitude, longitude]).addTo(map);
-                        }
+                    data.elements.forEach(element => {
+                        const latitude = element.lat;
+                        const longitude = element.lon;
+                        L.marker([latitude, longitude]).addTo(map);
                     });
                 })
                 .catch(error => console.error('Error:', error));
         }
 
+        // Update the map with water sources every 5 seconds
         setInterval(updateMap, 5000);
     </script>
 </body>
