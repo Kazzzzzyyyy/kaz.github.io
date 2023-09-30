@@ -1,62 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Water Sources Map</title>
-    <style>
-        #map {
-            height: 400px;
-            width: 100%;
-        }
-    </style>
-    <!-- Include Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <title>Interactive Map with Markers</title>
+  <style>
+    #map {
+      height: 400px;
+      width: 100%;
+    }
+  </style>
+  <!-- Include Leaflet CSS and JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
-
 <body>
-    <h1>Water Sources Map</h1>
-    <div id="map"></div>
+  <h1>Water Sources Map</h1>
+  <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script>
-        function initMap() {
-            var map = L.map('map').setView([47.3, 9], 8);
+  <script>
+    // Initialize the map
+    var map = L.map('map').setView([47.3, 9], 8);
 
-            // Add OpenStreetMap tile layer to the map
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+    // Add OpenStreetMap as the base map
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-            // Fetch water sources data using the specified proxy server and Geonames API endpoint
-            fetch('https://cors-proxy.htmldriven.com/?url=http://api.geonames.org/extendedFindNearby?lat=47.3&lng=9&username=kazzyyy')
-                .then(response => response.json())
-                .then(data => {
-                    // Process the data and display markers on the map
-                    var waterSources = data.geonames;
-                    waterSources.forEach(source => {
-                        var marker = L.marker([parseFloat(source.lat), parseFloat(source.lng)]).addTo(map);
-                        
-                        // Create a popup with source details
-                        var popupContent = `
-                            <b>Name:</b> ${source.name}<br>
-                            <b>Latitude:</b> ${source.lat}<br>
-                            <b>Longitude:</b> ${source.lng}<br>
-                            <b>Location:</b> ${source.toponymName}
-                        `;
-                        
-                        // Bind the popup to the marker
-                        marker.bindPopup(popupContent);
-                    });
-                })
-                .catch(error => console.error('Error:', error));
-        }
-
-        // Call the initMap function after the page is fully loaded
-        window.onload = initMap;
-    </script>
+    // Fetch data from the API using the proxy server
+    fetch('https://crossorigin.me/http://api.geonames.org/extendedFindNearby?lat=47.3&lng=9&username=kazzyyy')
+      .then(response => response.json())
+      .then(data => {
+        // Loop through the data and create markers for each water source
+        data.geonames.forEach(waterSource => {
+          var marker = L.marker([parseFloat(waterSource.lat), parseFloat(waterSource.lng)]).addTo(map);
+          
+          // Create a popup for each marker
+          var popupContent = `<h2>${waterSource.name}</h2>
+                              <p><strong>Latitude:</strong> ${waterSource.lat}</p>
+                              <p><strong>Longitude:</strong> ${waterSource.lng}</p>
+                              <p><strong>Location:</strong> ${waterSource.toponymName}</p>`;
+          marker.bindPopup(popupContent);
+        });
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+  </script>
 </body>
-
 </html>
-
