@@ -43,8 +43,8 @@
                 })
                 .catch(error => console.error('Error fetching OSM data:', error));
 
-            // Fetch water sources from GeoNames API
-            fetch(`http://api.geonames.org/findNearbyRiversJSON?lat=37.7749&lng=-122.4194&username=kazzyyy`)
+            // Fetch water sources from GeoNames API (HTTPS)
+            fetch(`https://secure.geonames.org/findNearbyRiversJSON?lat=37.7749&lng=-122.4194&username=kazzyyy`)
                 .then(response => response.json())
                 .then(geoNamesData => {
                     // Process and display GeoNames water sources
@@ -68,3 +68,4 @@
 </body>
 
 </html>
+
