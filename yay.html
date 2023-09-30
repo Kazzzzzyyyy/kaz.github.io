@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive World Map</title>
+  <link rel="stylesheet" href="css/leaflet.css" />
+  <style>
+    #map {
+      height: 500px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="js/leaflet.js"></script>
+  <script>
+    var map = L.map('map').setView([0, 0], 2); // Centered at [latitude, longitude] with zoom level 2
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    // Fetch real-time data and update the map
+    function updateMap() {
+      fetch('https://restcountries.com/v3.1/all')
+        .then(response => response.json())
+        .then(data => {
+          // Iterate through the list of countries and add markers for each country on the map
+          data.forEach(country => {
+            // Check if the country has valid latitude and longitude data
+            if (country.latlng && country.latlng.length === 2) {
+              var latitude = country.latlng[0];
+              var longitude = country.latlng[1];
+
+              // Add a marker for the country on the map
+              L.marker([latitude, longitude]).addTo(map);
+            }
+          });
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Call the updateMap function every 5 seconds for real-time updates
+    setInterval(updateMap, 5000);
+  </script>
+</body>
+</html>
