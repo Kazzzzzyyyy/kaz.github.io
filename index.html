@@ -32,7 +32,12 @@
                     data.elements.forEach(element => {
                         const latitude = element.lat;
                         const longitude = element.lon;
-                        L.marker([latitude, longitude]).addTo(map);
+
+                        // Create a marker for each water source
+                        var marker = L.marker([latitude, longitude]).addTo(map);
+
+                        // Attach a popup with information about the water source
+                        marker.bindPopup(`<b>Water Source</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
                     });
                 })
                 .catch(error => console.error('Error:', error));
@@ -44,3 +49,4 @@
 </body>
 
 </html>
+
