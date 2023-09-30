@@ -23,30 +23,46 @@
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        function updateMap() {
-            const boundingBox = '37.7749,-122.4194,37.8049,-122.3894'; // Bounding box for San Francisco
-
+        function fetchWaterSources() {
+            // Fetch water sources from OpenStreetMap using Overpass API
             fetch(`https://overpass-api.de/api/interpreter?data=[out:json];(way["waterway"](bbox:${boundingBox});node["waterway"](bbox:${boundingBox}););out;`)
                 .then(response => response.json())
-                .then(data => {
-                    data.elements.forEach(element => {
+                .then(osmData => {
+                    // Process and display OSM water sources
+                    osmData.elements.forEach(element => {
+                        const name = element.tags.name || 'Unknown';
                         const latitude = element.lat;
                         const longitude = element.lon;
 
-                        // Create a marker for each water source
+                        // Create a marker for OSM water source
                         var marker = L.marker([latitude, longitude]).addTo(map);
-
-                        // Attach a popup with information about the water source
-                        marker.bindPopup(`<b>Water Source</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
+                        marker.bindPopup(`<b>${name}</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
                     });
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => console.error('Error fetching OSM data:', error));
+
+            // Fetch water sources from GeoNames API
+            fetch(`http://api.geonames.org/findNearbyRiversJSON?lat=37.7749&lng=-122.4194&username=kazzyyy`)
+                .then(response => response.json())
+                .then(geoNamesData => {
+                    // Process and display GeoNames water sources
+                    geoNamesData.geonames.forEach(geoName => {
+                        const name = geoName.name || 'Unknown';
+                        const latitude = geoName.lat;
+                        const longitude = geoName.lng;
+                        const address = geoName.toponymName || 'Unknown Address';
+
+                        // Create a marker for GeoNames water source
+                        var marker = L.marker([latitude, longitude]).addTo(map);
+                        marker.bindPopup(`<b>${name}</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}<br>Address: ${address}`);
+                    });
+                })
+                .catch(error => console.error('Error fetching GeoNames data:', error));
         }
 
-        // Update the map with water sources every 5 seconds
-        setInterval(updateMap, 5000);
+        // Update the map with water sources every 10 seconds
+        setInterval(fetchWaterSources, 10000);
     </script>
 </body>
 
 </html>
-
