@@ -2,50 +2,61 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interactive Map</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
-    #map {
-      height: 500px;
-      width: 100%;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Sources Map</title>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+    <!-- Include Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 
 <body>
-  <div id="map"></div>
+    <h1>Water Sources Map</h1>
+    <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    var map = L.map('map').setView([37.7749, -122.4194], 13); // Centered at San Francisco
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        function initMap() {
+            var map = L.map('map').setView([47.3, 9], 8);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            // Add OpenStreetMap tile layer to the map
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
 
-    function fetchWaterSources() {
-      // Fetch water sources from the Glitch project's API endpoint
-      fetch('https://festive-slender-petalite.glitch.me/api/geonames?lat=37.7749&lng=-122.4194')
-        .then(response => response.json())
-        .then(data => {
-          // Process and display water sources
-          data.geonames.forEach(geoName => {
-            const name = geoName.name || 'Unknown';
-            const latitude = geoName.lat;
-            const longitude = geoName.lng;
-            const address = geoName.toponymName || 'Unknown Address';
+            // Fetch water sources data using the specified proxy server and Geonames API endpoint
+            fetch('https://cors-proxy.htmldriven.com/?url=http://api.geonames.org/extendedFindNearby?lat=47.3&lng=9&username=kazzyyy')
+                .then(response => response.json())
+                .then(data => {
+                    // Process the data and display markers on the map
+                    var waterSources = data.geonames;
+                    waterSources.forEach(source => {
+                        var marker = L.marker([parseFloat(source.lat), parseFloat(source.lng)]).addTo(map);
+                        
+                        // Create a popup with source details
+                        var popupContent = `
+                            <b>Name:</b> ${source.name}<br>
+                            <b>Latitude:</b> ${source.lat}<br>
+                            <b>Longitude:</b> ${source.lng}<br>
+                            <b>Location:</b> ${source.toponymName}
+                        `;
+                        
+                        // Bind the popup to the marker
+                        marker.bindPopup(popupContent);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
 
-            // Create a marker for each water source
-            var marker = L.marker([latitude, longitude]).addTo(map);
-            marker.bindPopup(`<b>${name}</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}<br>Address: ${address}`);
-          });
-        })
-        .catch(error => console.error('Error fetching data:', error));
-    }
-
-    // Update the map with water sources every 10 seconds
-    setInterval(fetchWaterSources, 10000);
-  </script>
+        // Call the initMap function after the page is fully loaded
+        window.onload = initMap;
+    </script>
 </body>
 
 </html>
+
