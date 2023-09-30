@@ -23,6 +23,8 @@
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
+        var boundingBox = '37.7749,-122.4194,37.8049,-122.3894'; // Bounding box for San Francisco
+
         function fetchWaterSources() {
             // Fetch water sources from OpenStreetMap using Overpass API
             fetch(`https://overpass-api.de/api/interpreter?data=[out:json];(way["waterway"](bbox:${boundingBox});node["waterway"](bbox:${boundingBox}););out;`)
