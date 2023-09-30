@@ -25,7 +25,7 @@
 
     function fetchWaterSources() {
       // Fetch water sources from the Glitch project's API endpoint
-      fetch('/api/geonames?lat=37.7749&lng=-122.4194')
+      fetch('https://festive-slender-petalite.glitch.me/api/geonames?lat=37.7749&lng=-122.4194')
         .then(response => response.json())
         .then(data => {
           // Process and display water sources
@@ -49,4 +49,3 @@
 </body>
 
 </html>
-
