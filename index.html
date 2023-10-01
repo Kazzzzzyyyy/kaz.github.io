@@ -25,25 +25,56 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Fetch data from the API using the proxy server
-    fetch('http://localhost:3000/data?lat=47.3&lng=9')
-      .then(response => response.json())
-      .then(data => {
-        // Loop through the data and create markers for each water source
-        data.geonames.forEach(waterSource => {
-          var marker = L.marker([parseFloat(waterSource.lat), parseFloat(waterSource.lng)]).addTo(map);
-          
-          // Create a popup for each marker
-          var popupContent = `<h2>${waterSource.name}</h2>
-                              <p><strong>Latitude:</strong> ${waterSource.lat}</p>
-                              <p><strong>Longitude:</strong> ${waterSource.lng}</p>
-                              <p><strong>Location:</strong> ${waterSource.toponymName}</p>`;
-          marker.bindPopup(popupContent);
+    // Function to fetch additional data when marker is clicked
+    function fetchAdditionalData(marker) {
+      // 1. Fetch location details from OpenStreetMap using Nominatim API
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${marker.lat}&lon=${marker.lng}&format=json`)
+        .then(response => response.json())
+        .then(openStreetMapData => {
+          const locationName = openStreetMapData.display_name;
+          const countryCode = openStreetMapData.address.country_code;
+
+          // 2. Fetch data from OSM Overpass API for water-related features (e.g., rivers, lakes) near the clicked marker
+          fetch(`https://overpass-api.de/api/interpreter?data=[out:json];(way(around:1000,${marker.lat},${marker.lng})[waterway~"river|lake|stream|canal|pond"];);out;`)
+            .then(response => response.json())
+            .then(osmData => {
+              const waterFeatures = osmData.elements;
+
+              // 3. Fetch World Bank water data based on the country code from OpenStreetMap
+              fetch(`http://api.worldbank.org/v2/country/${countryCode}/indicator/SH.H2O.BASW.ZS?date=latest&format=json`)
+                .then(response => response.json())
+                .then(worldBankData => {
+                  const waterIndicatorValue = worldBankData[1][0].value;
+
+                  // Now you can use locationName, waterFeatures, and waterIndicatorValue for display
+                  console.log('Location Name:', locationName);
+                  console.log('Water Features:', waterFeatures);
+                  console.log('Water Indicator Value:', waterIndicatorValue);
+                })
+                .catch(error => {
+                  console.error('Error fetching World Bank data:', error);
+                });
+            })
+            .catch(error => {
+              console.error('Error fetching OSM Overpass data:', error);
+            });
+        })
+        .catch(error => {
+          console.error('Error fetching OpenStreetMap data:', error);
         });
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
+    }
+
+    // Sample marker data (you can replace this with your fetched data)
+    var markerData = { lat: 47.3, lng: 9, name: 'Sample Water Source' };
+
+    // Create marker for the sample data
+    var marker = L.marker([parseFloat(markerData.lat), parseFloat(markerData.lng)]).addTo(map);
+    marker.bindPopup(`<h2>${markerData.name}</h2>`);
+
+    // Fetch additional data when marker is clicked
+    marker.on('click', function() {
+      fetchAdditionalData(markerData);
+    });
   </script>
 </body>
 </html>
