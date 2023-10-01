@@ -1,57 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interactive Map</title>
+  <title>Interactive Map with Markers</title>
   <style>
-    body, html {
-      height: 100%;
-      margin: 0;
-    }
     #map {
-      height: 100%;
+      height: 100vh;
       width: 100%;
     }
-    #info-banner {
-      height: 100vh;
-      width: 0;
-      position: fixed;
-      right: 0;
-      top: 0;
-      background-color: #f2f2f2;
-      overflow-y: auto;
-      padding: 10px;
-      transition: 0.3s;
-    }
-    .close-btn {
+
+    #infoBanner {
       position: absolute;
-      top: 8px;
-      left: 8px;
-      font-size: 20px;
-      cursor: pointer;
+      top: 0;
+      right: 0;
+      width: 20%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      display: none;
     }
   </style>
   <!-- Include Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
+  <h1>Water Sources Map</h1>
   <div id="map"></div>
-  <div id="info-banner">
-    <div class="close-btn" onclick="closeInfoBanner()">&times;</div>
-    <div id="info-content"></div>
-  </div>
+  <div id="infoBanner"></div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map').setView([30.3753, 69.3451], 6); // Centered at Pakistan
+    var map = L.map('map').setView([30.3753, 69.3451], 6); // Centered on Pakistan
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
     const citiesData = [
-        { name: 'Karachi', lat: 24.8607, lng: 67.0011 },
+      { name: 'Karachi', lat: 24.8607, lng: 67.0011 },
       { name: 'Lahore', lat: 31.5497, lng: 74.3436 },
       { name: 'Faisalabad', lat: 31.4504, lng: 73.1350 },
       { name: 'Rawalpindi', lat: 33.6844, lng: 73.0479 },
@@ -81,34 +66,27 @@
       { name: 'Swat River', lat: 35.3191, lng: 72.4258 }
     ];
 
-    function showInfoBanner(content) {
-      const infoBanner = document.getElementById('info-banner');
-      const infoContent = document.getElementById('info-content');
-      infoContent.innerHTML = content;
-      infoBanner.style.width = '20%';
+    function createMarker(data, color) {
+      const marker = L.marker([data.lat, data.lng], { icon: L.divIcon({ className: 'leaflet-div-icon', html: `<div style="background-color: ${color};">${data.name}<br>Lat: ${data.lat}<br>Lng: ${data.lng}</div>` }) })
+        .addTo(map)
+        .on('click', function () {
+          showInfoBanner(data);
+        });
+      return marker;
     }
 
-    function closeInfoBanner() {
-      const infoBanner = document.getElementById('info-banner');
-      infoBanner.style.width = '0';
-    }
-
-    // Function to create popup content
-    function createPopupContent(name) {
-      return `
-        <strong>${name}</strong><br>
-        <button onclick="showInfoBanner('Additional information for ${name}')">Show more</button>
-      `;
+    function showInfoBanner(data) {
+      const infoBanner = document.getElementById('infoBanner');
+      infoBanner.innerHTML = `<h2>${data.name}</h2><p>Latitude: ${data.lat}</p><p>Longitude: ${data.lng}</p>`;
+      infoBanner.style.display = 'block';
     }
 
     citiesData.forEach(city => {
-      const marker = L.marker([city.lat, city.lng]).addTo(map);
-      marker.bindPopup(createPopupContent(city.name));
+      createMarker(city, 'red');
     });
 
     riversData.forEach(river => {
-      const marker = L.marker([river.lat, river.lng]).addTo(map);
-      marker.bindPopup(createPopupContent(river.name));
+      createMarker(river, 'blue');
     });
   </script>
 </body>
