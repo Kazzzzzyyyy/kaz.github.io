@@ -26,7 +26,7 @@
     }).addTo(map);
 
     // Fetch data from the API using the proxy server
-    fetch('https://crossorigin.me/http://api.geonames.org/extendedFindNearby?lat=47.3&lng=9&username=kazzyyy')
+    fetch('http://localhost:3000/data?lat=47.3&lng=9')
       .then(response => response.json())
       .then(data => {
         // Loop through the data and create markers for each water source
