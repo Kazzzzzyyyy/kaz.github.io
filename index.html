@@ -1,66 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Map with Markers</title>
-    <style>
-        #map {
-            height: 400px;
-            width: 100%;
-        }
-    </style>
-    <!-- Include Leaflet CSS and JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <title>Interactive Map with Markers</title>
+  <style>
+    #map {
+      height: 400px;
+      width: 100%;
+    }
+  </style>
+  <!-- Include Leaflet CSS and JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-    <h1>Water Sources Map</h1>
-    <div id="map"></div>
+  <h1>Water Sources Map</h1>
+  <div id="map"></div>
 
-    <script>
-        // Initialize the map
-        var map = L.map('map').setView([47.3, 9], 8);
+  <script>
+    var map = L.map('map').setView([47.3, 9], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-        // Add OpenStreetMap as the base map
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Function to fetch data from the server and create markers on the map
-        async function fetchDataFromServer(lat, lng) {
-            try {
-                const response = await fetch(`/data?lat=${lat}&lng=${lng}`);
-                const data = await response.json();
-
-                // Loop through the data and create markers for each water source
-                data.geonames.forEach(waterSource => {
-                    var marker = L.marker([parseFloat(waterSource.lat), parseFloat(waterSource.lng)]).addTo(map);
-
-                    // Create a popup for each marker
-                    var popupContent = `<h2>${waterSource.name}</h2>
-                                        <p><strong>Latitude:</strong> ${waterSource.lat}</p>
-                                        <p><strong>Longitude:</strong> ${waterSource.lng}</p>
-                                        <p><strong>Location:</strong> ${waterSource.toponymName}</p>`;
-                    marker.bindPopup(popupContent);
-                });
-            } catch (error) {
-                console.error('Error:', error);
-            }
+    async function fetchDataFromServer(lat, lng) {
+      try {
+        const username = 'kazzyyy';
+        const response = await fetch(`/data?lat=${lat}&lng=${lng}&username=${username}`);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
 
-        // Sample marker data (you can replace this with your fetched data)
-        var markerData = { lat: 47.3, lng: 9, name: 'Sample Water Source' };
+        const data = await response.json();
+        createMarkers(data);
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
 
-        // Create marker for the sample data
-        var marker = L.marker([parseFloat(markerData.lat), parseFloat(markerData.lng)]).addTo(map);
-        marker.bindPopup(`<h2>${markerData.name}</h2>`);
+    function createMarkers(data) {
+      data.forEach(waterSource => {
+        var marker = L.marker([parseFloat(waterSource.lat), parseFloat(waterSource.lng)]).addTo(map);
+        var popupContent = `<h2>${waterSource.name}</h2>
+                            <p><strong>Latitude:</strong> ${waterSource.lat}</p>
+                            <p><strong>Longitude:</strong> ${waterSource.lng}</p>
+                            <p><strong>Location:</strong> ${waterSource.toponymName}</p>`;
+        marker.bindPopup(popupContent);
+      });
+    }
 
-        // Fetch additional data when marker is clicked
-        marker.on('click', function() {
-            fetchDataFromServer(markerData.lat, markerData.lng);
-        });
-    </script>
+    // Example usage: Call fetchDataFromServer with latitude and longitude values
+    const latitude = 47.3;
+    const longitude = 9;
+    fetchDataFromServer(latitude, longitude);
+  </script>
 </body>
 </html>
 
