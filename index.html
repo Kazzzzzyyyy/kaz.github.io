@@ -41,7 +41,7 @@
               const waterFeatures = osmData.elements;
 
               // 3. Fetch World Bank water data based on the country code from OpenStreetMap
-              fetch(`http://api.worldbank.org/v2/country/${countryCode}/indicator/SH.H2O.BASW.ZS?date=latest&format=json`)
+              fetch(`https://api.worldbank.org/v2/country/${countryCode}/indicator/SH.H2O.BASW.ZS?date=latest&format=json`)
                 .then(response => response.json())
                 .then(worldBankData => {
                   const waterIndicatorValue = worldBankData[1][0].value;
