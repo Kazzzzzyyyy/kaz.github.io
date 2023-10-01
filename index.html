@@ -32,12 +32,13 @@
         .then(response => response.json())
         .then(openStreetMapData => {
           const locationName = openStreetMapData.display_name;
+          const latitude = marker.latlng.lat;
+          const longitude = marker.latlng.lng;
 
-          // Now you can use locationName for display
-          console.log('Location Name:', locationName);
-          
-          // You can also update a DOM element with the fetched data
-          document.getElementById('locationDetails').textContent = `Location Name: ${locationName}`;
+          // Update the marker's pop-up content
+          marker.bindPopup(`<h2>${locationName}</h2>
+                            <p><strong>Latitude:</strong> ${latitude}</p>
+                            <p><strong>Longitude:</strong> ${longitude}</p>`).openPopup();
         })
         .catch(error => {
           console.error('Error fetching OpenStreetMap data:', error);
@@ -49,16 +50,11 @@
 
     // Create marker for the sample data
     var marker = L.marker([parseFloat(markerData.lat), parseFloat(markerData.lng)]).addTo(map);
-    marker.bindPopup(`<h2>${markerData.name}</h2>`);
 
-    // Fetch additional data when marker is clicked
+    // Fetch additional data and update pop-up when marker is clicked
     marker.on('click', function(event) {
-      fetchAdditionalData(event);
+      fetchAdditionalData(event.target);
     });
   </script>
-
-  <!-- Display location details -->
-  <div id="locationDetails"></div>
 </body>
 </html>
-
