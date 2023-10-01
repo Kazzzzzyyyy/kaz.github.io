@@ -1,60 +1,37 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Interactive Map with Markers</title>
-  <style>
-    #map {
-      height: 400px;
-      width: 100%;
-    }
-  </style>
-  <!-- Include Leaflet CSS and JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-</head>
-<body>
-  <h1>Water Sources Map</h1>
-  <div id="map"></div>
+const express = require('express');
+const app = express();
+const port = 3000;
 
-  <script>
-    // Initialize the map
-    var map = L.map('map').setView([47.3, 9], 8);
+app.use(express.json());
 
-    // Add OpenStreetMap as the base map
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+app.get('/data', (req, res) => {
+    const { lat, lng } = req.query;
+    const username = 'kazzyyy';
+    const apiUrl = `http://api.geonames.org/findNearbyJSON?lat=${lat}&lng=${lng}&username=${username}`;
 
-    // Function to fetch additional data when marker is clicked
-    function fetchAdditionalData(marker) {
-      // Fetch location details from OpenStreetMap using Nominatim API
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${marker.latlng.lat}&lon=${marker.latlng.lng}&format=json`)
-        .then(response => response.json())
-        .then(openStreetMapData => {
-          const locationName = openStreetMapData.display_name;
-          const latitude = marker.latlng.lat;
-          const longitude = marker.latlng.lng;
+    // Using dynamic import() syntax
+    import('node-fetch')
+        .then(fetchModule => {
+            const fetch = fetchModule.default;
 
-          // Update the marker's pop-up content
-          marker.bindPopup(`<h2>${locationName}</h2>
-                            <p><strong>Latitude:</strong> ${latitude}</p>
-                            <p><strong>Longitude:</strong> ${longitude}</p>`).openPopup();
+            // Fetch data using the fetch function
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // Process the data as needed before sending it to the client
+                    res.json(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    res.status(500).json({ error: 'Internal Server Error' });
+                });
         })
         .catch(error => {
-          console.error('Error fetching OpenStreetMap data:', error);
+            console.error('Error importing node-fetch:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
         });
-    }
+});
 
-    // Sample marker data (you can replace this with your fetched data)
-    var markerData = { lat: 47.3, lng: 9, name: 'Sample Water Source' };
-
-    // Create marker for the sample data
-    var marker = L.marker([parseFloat(markerData.lat), parseFloat(markerData.lng)]).addTo(map);
-
-    // Fetch additional data and update pop-up when marker is clicked
-    marker.on('click', function(event) {
-      fetchAdditionalData(event.target);
-    });
-  </script>
-</body>
-</html>
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
