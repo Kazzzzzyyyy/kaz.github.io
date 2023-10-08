@@ -69,22 +69,15 @@
                 ext: 'png'
             });
 
-            var tileLayerUr = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            var tileLayerur = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             });
 
-            var nasa 
-            
-            lyrnasa= L.imageOverlay('https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73909/world.topo.bathy.200412.3x5400x2700.png').addTo(map)
-objOverlays= {
-    "nasa": lyrnasa 
-}
             // Define base layers
             var baseLayers = {
-                'Regional Language': tileLayerUr,
-                'English': tileLayeren, 
-                'nasa' : nasa
+                'Regional Language': tileLayerur,
+                'English': tileLayeren
             };
 
             // Add default base layer
@@ -92,176 +85,177 @@ objOverlays= {
 
             // Create a language selector control
             var languageSelector = L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
+
+            // Watch for geolocation
+            navigator.geolocation.watchPosition(success, error);
+
+            function success(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                // Create a sample marker with a popup
+                var marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup("<b>Click me!</b><br>Double-click to close.").on('dblclick', function () {
+                    map.closePopup(marker.getPopup());
+                });
+
+                let circle = L.circle([lat, lng], { radius: accuracy });
+                circle.addTo(map);
+
+                map.fitBounds(circle.getBounds());
+
+                // Call the reverse geocoding function
+                reverseGeocode(lat, lng, marker);
+            }
+
+            function error(err) {
+                if (err.code === 1) {
+                    alert("Please allow geolocation access");
+                } else {
+                    alert("Cannot get current location");
+                }
+            }
+
+            var activeMarker = null; // Track the active marker
+            var activeMarkerCoords = {}; // Track the coordinates of the active marker
+
+            // Map click event handler
+            map.on('click', function (e) {
+                var latlng = e.latlng;
+
+                // Remove the previously active marker if it exists
+                if (activeMarker) {
+                    map.removeLayer(activeMarker);
+                }
+
+                // Create a new marker at the clicked location
+                activeMarker = L.marker(latlng).addTo(map);
+                activeMarkerCoords = latlng; // Store the coordinates
+
+                // Call the reverse geocoding function
+                reverseGeocode(latlng.lat, latlng.lng, activeMarker);
+            });
+
+            function reverseGeocode(lat, lng, marker) {
+                var apiUrl = `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=fdb26032553540fb94db602c3c5767b6`;
+
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.results && data.results.length > 0) {
+                            var address = data.results[0].formatted;
+                            var popupContent = `<b> Address:</b> ${address}<br><span class="show-more-link">Show more</span>`;
+                            marker.bindPopup(popupContent).openPopup();
+                        } else {
+                            marker.bindPopup("<b>Address not found</b>").openPopup();
+                        }
+                    })
+                    .catch(error => console.error(error));
+            }
+
+            // Add a click event to the "Show more" link inside the popup
+            document.addEventListener('click', function (e) {
+                if (e.target && e.target.classList.contains('show-more-link')) {
+                    // Get the current marker's coordinates
+                    var latlng = activeMarkerCoords;
+                    var radiusList = document.getElementById('radius-list');
+
+                    // Clear the previous list
+                    radiusList.innerHTML = '';
+
+                    // Define radii in meters
+                    var radii = [5000, 10000, 25000, 50000];
+
+                    // Fetch water sources for each radius
+                    radii.forEach(radius => {
+                        fetchWaterSources(latlng, radius, radiusList);
+                    });
+
+                    // Display the info banner
+                    document.getElementById('info-banner').style.display = 'block';
+                }
+            });
+
+            // Function to fetch water sources from OpenStreetMap using Overpass API
+            function fetchWaterSources(latlng, radius, radiusList) {
+                var overpassApiUrl = 'https://overpass-api.de/api/interpreter';
+                var overpassQuery = `[out:json];
+                    (
+                        node["natural"="water"](around:${radius},${latlng.lat},${latlng.lng});
+                        way["natural"="water"](around:${radius},${latlng.lat},${latlng.lng});
+                    );
+                    out;
+                `;
+
+                fetch(overpassApiUrl, {
+                    method: 'POST',
+                    body: overpassQuery
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Parse and display water sources
+                        var waterSources = data.elements || [];
+                        var uniqueSources = {}; // Track unique sources by name within one radius
+
+                        if (waterSources.length > 0) {
+                            var radiusLabel = `${(radius / 1000).toFixed(2)} km`;
+                            var radiusItem = document.createElement('li');
+                            radiusItem.innerHTML = `<strong>${radiusLabel}:</strong>`;
+
+                            var sourcesList = document.createElement('ul');
+                            waterSources.forEach(source => {
+                                var sourceName = source.tags.name;
+                                if (sourceName && sourceName !== 'Unnamed') {
+                                    // Check if the source is unique within this radius
+                                    if (!uniqueSources[sourceName]) {
+                                        uniqueSources[sourceName] = true;
+
+                                        var sourceItem = createClickableListItem(sourceName, source.lat, source.lon);
+                                        sourcesList.appendChild(sourceItem);
+                                    }
+                                }
+                            });
+
+                            radiusItem.appendChild(sourcesList);
+                            radiusList.appendChild(radiusItem);
+                        }
+                    })
+                    .catch(error => console.error('Error fetching water sources:', error));
+            }
+
+            // Create a list item for each water source and make it clickable
+            function createClickableListItem(name, lat, lng) {
+                var listItem = document.createElement('li');
+                var link = document.createElement('a');
+                link.textContent = name;
+                link.href = '#';
+
+                // Add a click event listener to the link
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // Remove the active marker
+                    map.removeLayer(activeMarker);
+                    // Create a new marker at the clicked location
+                    activeMarker = L.marker([lat, lng]).addTo(map);
+                    activeMarkerCoords = L.latLng(lat, lng); // Update the coordinates
+                    activeMarker.bindPopup(`<b>${name}</b><br>Lat: ${lat}<br>Lng: ${lng}`).openPopup();
+                    map.panTo([lat, lng]); // Pan to the clicked marker's location
+                });
+
+                listItem.appendChild(link);
+                return listItem;
+            }
+
+            // Function to open a Google search with the name and coordinates
+            function openGoogleSearch(name, lat, lng) {
+                var searchQuery = `${name} coordinates ${lat},${lng}`;
+                window.open(`https://www.google.com/search?q=${encodeURI(searchQuery)}`, '_blank');
+            }
         }
 
         // Call the initMap function to initialize the map
         initMap();
-
-        // Watch for geolocation
-        navigator.geolocation.watchPosition(success, error);
-
-        function success(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
-
-            // Create a sample marker with a popup
-            var marker = L.marker([lat, lng]).addTo(map);
-            marker.bindPopup("<b>Click me!</b><br>Double-click to close.").on('dblclick', function () {
-                map.closePopup(marker.getPopup());
-            });
-
-            let circle = L.circle([lat, lng], { radius: accuracy });
-            circle.addTo(map);
-
-            map.fitBounds(circle.getBounds());
-
-            // Call the reverse geocoding function
-            reverseGeocode(lat, lng, marker);
-        }
-
-        function error(err) {
-            if (err.code === 1) {
-                alert("Please allow geolocation access");
-            } else {
-                alert("Cannot get current location");
-            }
-        }
-
-        var activeMarker = null; // Track the active marker
-        var activeMarkerCoords = {}; // Track the coordinates of the active marker
-
-        // Map click event handler
-        map.on('click', function (e) {
-            var latlng = e.latlng;
-
-            // Remove the previously active marker if it exists
-            if (activeMarker) {
-                map.removeLayer(activeMarker);
-            }
-
-            // Create a new marker at the clicked location
-            activeMarker = L.marker(latlng).addTo(map);
-            activeMarkerCoords = latlng; // Store the coordinates
-
-            // Call the reverse geocoding function
-            reverseGeocode(latlng.lat, latlng.lng, activeMarker);
-        });
-
-        function reverseGeocode(lat, lng, marker) {
-            var apiUrl = `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=fdb26032553540fb94db602c3c5767b6`;
-
-            fetch(apiUrl)
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data.results && data.results.length > 0) {
-                        var address = data.results[0].formatted;
-                        var popupContent = `<b> Address:</b> ${address}<br><span class="show-more-link">Show more</span>`;
-                        marker.bindPopup(popupContent).openPopup();
-                    } else {
-                        marker.bindPopup("<b>Address not found</b>").openPopup();
-                    }
-                })
-                .catch(error => console.error(error));
-        }
-
-        // Add a click event to the "Show more" link inside the popup
-        document.addEventListener('click', function (e) {
-            if (e.target && e.target.classList.contains('show-more-link')) {
-                // Get the current marker's coordinates
-                var latlng = activeMarkerCoords;
-                var radiusList = document.getElementById('radius-list');
-
-                // Clear the previous list
-                radiusList.innerHTML = '';
-
-                // Define radii in meters
-                var radii = [5000, 10000, 25000, 50000];
-
-                // Fetch water sources for each radius
-                radii.forEach(radius => {
-                    fetchWaterSources(latlng, radius, radiusList);
-                });
-
-                // Display the info banner
-                document.getElementById('info-banner').style.display = 'block';
-            }
-        });
-
-        // Function to fetch water sources from OpenStreetMap using Overpass API
-        function fetchWaterSources(latlng, radius, radiusList) {
-            var overpassApiUrl = 'https://overpass-api.de/api/interpreter';
-            var overpassQuery = `[out:json];
-                (
-                    node["natural"="water"](around:${radius},${latlng.lat},${latlng.lng});
-                    way["natural"="water"](around:${radius},${latlng.lat},${latlng.lng});
-                );
-                out;
-            `;
-
-            fetch(overpassApiUrl, {
-                method: 'POST',
-                body: overpassQuery
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Parse and display water sources
-                var waterSources = data.elements || [];
-                var uniqueSources = {}; // Track unique sources by name within one radius
-
-                if (waterSources.length > 0) {
-                    var radiusLabel = `${(radius / 1000).toFixed(2)} km`;
-                    var radiusItem = document.createElement('li');
-                    radiusItem.innerHTML = `<strong>${radiusLabel}:</strong>`;
-
-                    var sourcesList = document.createElement('ul');
-                    waterSources.forEach(source => {
-                        var sourceName = source.tags.name;
-                        if (sourceName && sourceName !== 'Unnamed') {
-                            // Check if the source is unique within this radius
-                            if (!uniqueSources[sourceName]) {
-                                uniqueSources[sourceName] = true;
-
-                                var sourceItem = createClickableListItem(sourceName, source.lat, source.lon);
-                                sourcesList.appendChild(sourceItem);
-                            }
-                        }
-                    });
-
-                    radiusItem.appendChild(sourcesList);
-                    radiusList.appendChild(radiusItem);
-                }
-            })
-            .catch(error => console.error('Error fetching water sources:', error));
-        }
-
-        // Create a list item for each water source and make it clickable
-        function createClickableListItem(name, lat, lng) {
-            var listItem = document.createElement('li');
-            var link = document.createElement('a');
-            link.textContent = name;
-            link.href = '#';
-
-            // Add a click event listener to the link
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
-                // Remove the active marker
-                map.removeLayer(activeMarker);
-                // Create a new marker at the clicked location
-                activeMarker = L.marker([lat, lng]).addTo(map);
-                activeMarkerCoords = L.latLng(lat, lng); // Update the coordinates
-                activeMarker.bindPopup(`<b>${name}</b><br>Lat: ${lat}<br>Lng: ${lng}`).openPopup();
-                map.panTo([lat, lng]); // Pan to the clicked marker's location
-            });
-
-            listItem.appendChild(link);
-            return listItem;
-        }
-
-        // Open a Google search with the name and coordinates
-        var searchQuery = `${name} coordinates ${lat},${lng}`;
-                window.open(`https://www.google.com/search?q=${encodeURI(searchQuery)}`, '_blank');
-            
     </script>
 </body>
 </html>
