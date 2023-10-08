@@ -1,101 +1,267 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Interactive Map with Markers</title>
-  <style>
-    #map {
-      height: 100vh;
-      width: 100%;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Map with Water Sources</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <style>
+        /* Style for the info banner */
+        #info-banner {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 20%;
+            height: 100%;
+            background-color: #fff;
+            border-left: 1px solid #ccc;
+            overflow-y: auto;
+            display: none;
+        }
 
-    #infoBanner {
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 20%;
-      height: 100vh;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 20px;
-      display: none;
-    }
-  </style>
-  <!-- Include Leaflet CSS and JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        /* Map container style */
+        #map {
+            height: 100vh;
+            width: 80%;
+            float: left;
+        }
+
+        /* Style for the "Show more" link */
+        .show-more-link {
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-  <h1>Water Sources Map</h1>
-  <div id="map"></div>
-  <div id="infoBanner"></div>
+    <div id="map"></div>
 
-  <script>
-    var map = L.map('map').setView([30.3753, 69.3451], 6); // Centered on Pakistan
+    <!-- Info Banner -->
+    <div id="info-banner">
+        <!-- Content for the info banner here -->
+        <h2>Info Banner</h2>
+        <div id="water-sources-list">
+            <h3>Water Sources within Various Radii:</h3>
+            <ul id="radius-list"></ul>
+        </div>
+    </div>
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        var map;
 
-    const citiesData = [
-      { name: 'Karachi', lat: 24.8607, lng: 67.0011 },
-        { name: 'Lahore', lat: 31.5497, lng: 74.3436 },
-      { name: 'Faisalabad', lat: 31.4504, lng: 73.1350 },
-      { name: 'Rawalpindi', lat: 33.6844, lng: 73.0479 },
-      { name: 'Multan', lat: 30.1575, lng: 71.5249 },
-      { name: 'Peshawar', lat: 34.0151, lng: 71.5249 },
-      { name: 'Gujranwala', lat: 32.1617, lng: 74.1883 },
-      { name: 'Quetta', lat: 30.1798, lng: 66.9750 },
-      { name: 'Islamabad', lat: 33.6844, lng: 73.0479 },
-      { name: 'Sargodha', lat: 32.0836, lng: 72.6711 },
-      { name: 'Sialkot', lat: 32.4945, lng: 74.5222 },
-      { name: 'Bahawalpur', lat: 29.3956, lng: 71.6728 },
-      { name: 'Sukkur', lat: 27.7131, lng: 68.8687 },
-      { name: 'Larkana', lat: 27.5556, lng: 68.2149 },
-      { name: 'Sheikhupura', lat: 31.7131, lng: 73.9783 }// Add more cities here...
-    ];
+        function initMap() {
+            // Initialize the map
+            map = L.map('map').setView([51.05, -0.08], 13);
 
-    const riversData = [
-      { name: 'Indus River', lat: 29.8717, lng: 71.3422 },
-     { name: 'Jhelum River', lat: 32.8500, lng: 73.7000 },
-      { name: 'Chenab River', lat: 31.7167, lng: 72.9833 },
-      { name: 'Ravi River', lat: 32.2667, lng: 75.3833 },
-      { name: 'Sutlej River', lat: 30.9331, lng: 75.8663 },
-      { name: 'Beas River', lat: 31.5631, lng: 75.9050 },
-      { name: 'Kabul River', lat: 34.5400, lng: 69.1700 },
-      { name: 'Kurram River', lat: 33.8869, lng: 70.4083 },
-      { name: 'Gomal River', lat: 32.0833, lng: 69.3000 },
-      { name: 'Swat River', lat: 35.3191, lng: 72.4258 }here...
-    ];
+            // Add base tile layers
+            var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
 
-    function createMarker(data, color) {
-      const marker = L.marker([data.lat, data.lng], { icon: L.divIcon({ className: 'leaflet-div-icon', html: `<div style="background-color: ${color};">${data.name}</div>` }) })
-        .addTo(map)
-        .on('click', function () {
-          showInfoPopup(data);
+            var tileLayeren = L.tileLayer('https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.{ext}', {
+                minZoom: 0,
+                maxZoom: 20,
+                attribution: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                ext: 'png'
+            });
+
+            var tileLayerUr = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            });
+
+            var nasa 
+            
+            lyrnasa= L.imageOverlay('https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73909/world.topo.bathy.200412.3x5400x2700.png').addTo(map)
+objOverlays= {
+    "nasa": lyrnasa 
+}
+            // Define base layers
+            var baseLayers = {
+                'Regional Language': tileLayerUr,
+                'English': tileLayeren, 
+                'nasa' : nasa
+            };
+
+            // Add default base layer
+            tileLayeren.addTo(map);
+
+            // Create a language selector control
+            var languageSelector = L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
+        }
+
+        // Call the initMap function to initialize the map
+        initMap();
+
+        // Watch for geolocation
+        navigator.geolocation.watchPosition(success, error);
+
+        function success(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            // Create a sample marker with a popup
+            var marker = L.marker([lat, lng]).addTo(map);
+            marker.bindPopup("<b>Click me!</b><br>Double-click to close.").on('dblclick', function () {
+                map.closePopup(marker.getPopup());
+            });
+
+            let circle = L.circle([lat, lng], { radius: accuracy });
+            circle.addTo(map);
+
+            map.fitBounds(circle.getBounds());
+
+            // Call the reverse geocoding function
+            reverseGeocode(lat, lng, marker);
+        }
+
+        function error(err) {
+            if (err.code === 1) {
+                alert("Please allow geolocation access");
+            } else {
+                alert("Cannot get current location");
+            }
+        }
+
+        var activeMarker = null; // Track the active marker
+        var activeMarkerCoords = {}; // Track the coordinates of the active marker
+
+        // Map click event handler
+        map.on('click', function (e) {
+            var latlng = e.latlng;
+
+            // Remove the previously active marker if it exists
+            if (activeMarker) {
+                map.removeLayer(activeMarker);
+            }
+
+            // Create a new marker at the clicked location
+            activeMarker = L.marker(latlng).addTo(map);
+            activeMarkerCoords = latlng; // Store the coordinates
+
+            // Call the reverse geocoding function
+            reverseGeocode(latlng.lat, latlng.lng, activeMarker);
         });
-      return marker;
-    }
 
-    function showInfoPopup(data) {
-      const popupContent = `<h2>${data.name}</h2><p>Latitude: ${data.lat}</p><p>Longitude: ${data.lng}</p><button onclick="showInfoBanner('${data.name}', ${data.lat}, ${data.lng})">Show More</button>`;
-      L.popup()
-        .setLatLng([data.lat, data.lng])
-        .setContent(popupContent)
-        .openOn(map);
-    }
+        function reverseGeocode(lat, lng, marker) {
+            var apiUrl = `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=fdb26032553540fb94db602c3c5767b6`;
 
-    function showInfoBanner(name, lat, lng) {
-      const infoBanner = document.getElementById('infoBanner');
-      infoBanner.innerHTML = `<h2>${name}</h2><p>Latitude: ${lat}</p><p>Longitude: ${lng}</p>`;
-      infoBanner.style.display = 'block';
-    }
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.results && data.results.length > 0) {
+                        var address = data.results[0].formatted;
+                        var popupContent = `<b> Address:</b> ${address}<br><span class="show-more-link">Show more</span>`;
+                        marker.bindPopup(popupContent).openPopup();
+                    } else {
+                        marker.bindPopup("<b>Address not found</b>").openPopup();
+                    }
+                })
+                .catch(error => console.error(error));
+        }
 
-    citiesData.forEach(city => {
-      createMarker(city, 'red');
-    });
+        // Add a click event to the "Show more" link inside the popup
+        document.addEventListener('click', function (e) {
+            if (e.target && e.target.classList.contains('show-more-link')) {
+                // Get the current marker's coordinates
+                var latlng = activeMarkerCoords;
+                var radiusList = document.getElementById('radius-list');
 
-    riversData.forEach(river => {
-      createMarker(river, 'blue');
-    });
-  </script>
+                // Clear the previous list
+                radiusList.innerHTML = '';
+
+                // Define radii in meters
+                var radii = [5000, 10000, 25000, 50000];
+
+                // Fetch water sources for each radius
+                radii.forEach(radius => {
+                    fetchWaterSources(latlng, radius, radiusList);
+                });
+
+                // Display the info banner
+                document.getElementById('info-banner').style.display = 'block';
+            }
+        });
+
+        // Function to fetch water sources from OpenStreetMap using Overpass API
+        function fetchWaterSources(latlng, radius, radiusList) {
+            var overpassApiUrl = 'https://overpass-api.de/api/interpreter';
+            var overpassQuery = `[out:json];
+                (
+                    node["natural"="water"](around:${radius},${latlng.lat},${latlng.lng});
+                    way["natural"="water"](around:${radius},${latlng.lat},${latlng.lng});
+                );
+                out;
+            `;
+
+            fetch(overpassApiUrl, {
+                method: 'POST',
+                body: overpassQuery
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Parse and display water sources
+                var waterSources = data.elements || [];
+                var uniqueSources = {}; // Track unique sources by name within one radius
+
+                if (waterSources.length > 0) {
+                    var radiusLabel = `${(radius / 1000).toFixed(2)} km`;
+                    var radiusItem = document.createElement('li');
+                    radiusItem.innerHTML = `<strong>${radiusLabel}:</strong>`;
+
+                    var sourcesList = document.createElement('ul');
+                    waterSources.forEach(source => {
+                        var sourceName = source.tags.name;
+                        if (sourceName && sourceName !== 'Unnamed') {
+                            // Check if the source is unique within this radius
+                            if (!uniqueSources[sourceName]) {
+                                uniqueSources[sourceName] = true;
+
+                                var sourceItem = createClickableListItem(sourceName, source.lat, source.lon);
+                                sourcesList.appendChild(sourceItem);
+                            }
+                        }
+                    });
+
+                    radiusItem.appendChild(sourcesList);
+                    radiusList.appendChild(radiusItem);
+                }
+            })
+            .catch(error => console.error('Error fetching water sources:', error));
+        }
+
+        // Create a list item for each water source and make it clickable
+        function createClickableListItem(name, lat, lng) {
+            var listItem = document.createElement('li');
+            var link = document.createElement('a');
+            link.textContent = name;
+            link.href = '#';
+
+            // Add a click event listener to the link
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                // Remove the active marker
+                map.removeLayer(activeMarker);
+                // Create a new marker at the clicked location
+                activeMarker = L.marker([lat, lng]).addTo(map);
+                activeMarkerCoords = L.latLng(lat, lng); // Update the coordinates
+                activeMarker.bindPopup(`<b>${name}</b><br>Lat: ${lat}<br>Lng: ${lng}`).openPopup();
+                map.panTo([lat, lng]); // Pan to the clicked marker's location
+            });
+
+            listItem.appendChild(link);
+            return listItem;
+        }
+
+        // Open a Google search with the name and coordinates
+        var searchQuery = `${name} coordinates ${lat},${lng}`;
+                window.open(`https://www.google.com/search?q=${encodeURI(searchQuery)}`, '_blank');
+            
+    </script>
 </body>
 </html>
