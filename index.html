@@ -27,7 +27,7 @@
             float: left;
         }
 
-        /* Style for "Show more" link */
+        /* Style for "Show water sources" link */
         .water-source-link {
             color: blue;
             text-decoration: underline;
@@ -138,7 +138,7 @@
                     .then(data => {
                         if (data && data.results && data.results.length > 0) {
                             var address = data.results[0].formatted;
-                            var popupContent = `<b> Address:</b> ${address}<br><span class="show-more-link">Show more</span>`;
+                            var popupContent = `<b> Address:</b> ${address}<br><span class="water-source-link">Show water sources</span>`;
                             marker.bindPopup(popupContent).openPopup();
                         } else {
                             marker.bindPopup("<b>Address not found</b>").openPopup();
@@ -147,9 +147,9 @@
                     .catch(error => console.error(error));
             }
 
-            // Add a click event to the "Show more" link inside the popup
+            // Add a click event to the "Show water sources" link inside the popup
             document.addEventListener('click', function (e) {
-                if (e.target && e.target.classList.contains('show-more-link')) {
+                if (e.target && e.target.classList.contains('water-source-link')) {
                     // Get the current marker's coordinates
                     var latlng = activeMarkerCoords;
                     var radiusList = document.getElementById('radius-list');
