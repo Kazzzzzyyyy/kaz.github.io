@@ -62,26 +62,19 @@
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            var tileLayeren = L.tileLayer('https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.{ext}', {
-                minZoom: 0,
-                maxZoom: 20,
-                attribution: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                ext: 'png'
-            });
-
-            var tileLayerur = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            var tileLayeren = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             });
 
             // Define base layers
             var baseLayers = {
-                'Regional Language': tileLayerur,
-                'English': tileLayeren
+                'English': tileLayeren,
+                
             };
 
             // Add default base layer
-            tileLayeren.addTo(map);
+            osm.addTo(map);
 
             // Create a language selector control
             var languageSelector = L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
@@ -245,12 +238,6 @@
 
                 listItem.appendChild(link);
                 return listItem;
-            }
-
-            // Function to open a Google search with the name and coordinates
-            function openGoogleSearch(name, lat, lng) {
-                var searchQuery = `${name} coordinates ${lat},${lng}`;
-                window.open(`https://www.google.com/search?q=${encodeURI(searchQuery)}`, '_blank');
             }
         }
 
